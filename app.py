@@ -1,5 +1,7 @@
 from flask import Flask, request
 from datetime import datetime, timezone
+import os
+import requests
 
 app = Flask(__name__)
 
@@ -36,4 +38,46 @@ def get_votd():
     else:
         version = int(version)
 
-    return {"day": day, "version": version}
+    api_key = os.getenv("YVP_APP_KEY")
+
+    headers = {
+        "X-YVP-App-Key": api_key
+    }
+
+    #first YouVersion API call to get the verse of the day
+    try:
+        votd_response = requests.get(
+            f"https://api.youversion.com/v1/verse-of-the-days/{day}",
+            headers = headers,
+            timeout = 5
+        )
+
+        votd_response.raise_for_status()
+        votd_data = votd_response.json()
+        passage_id = votd_data["passage_id"]
+
+        response = {
+            "day": day,
+            #"reference": reference,
+            #"text": "text",
+            "version": version,
+            "passage_id": passage_id
+        }
+
+    except requests.exceptions.RequestException:
+        return {
+            "error": {
+                "code": "UPSTREAM_ERROR",
+                "message": "Unable to retrieve passage"
+            }
+        }, 502
+
+    except (KeyError, TypeError):
+        return {
+            "error": {
+                "code": "UPSTREAM_ERROR",
+                "message": "Invalid response from upstream API"
+            }
+        }, 502
+
+    return response
