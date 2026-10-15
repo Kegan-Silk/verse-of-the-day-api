@@ -44,8 +44,9 @@ def get_votd():
         "X-YVP-App-Key": api_key
     }
 
-    #first YouVersion API call to get the verse of the day
+    
     try:
+        #first YouVersion API call to get the verse of the day
         votd_response = requests.get(
             f"https://api.youversion.com/v1/verse-of-the-days/{day}",
             headers = headers,
@@ -56,12 +57,22 @@ def get_votd():
         votd_data = votd_response.json()
         passage_id = votd_data["passage_id"]
 
+        #second YouVersion API call to get the passage text
+        passage_response = requests.get(
+            f"https://api.youversion.com/v1/bibles/{version}/passages/{passage_id}",
+            headers = headers,
+            params = {"format": "text"},
+            timeout = 5
+        )
+
+        passage_response.raise_for_status()
+        passage_data = passage_response.json()
+
         response = {
             "day": day,
-            #"reference": reference,
-            #"text": "text",
-            "version": version,
-            "passage_id": passage_id
+            "reference": passage_data["reference"],
+            "text": passage_data["content"],
+            "version_id": version
         }
 
     except requests.exceptions.RequestException:
