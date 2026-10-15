@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 import os
 import requests
 
+cache = {}
+
 app = Flask(__name__)
 
 @app.get("/votd")
@@ -37,6 +39,11 @@ def get_votd():
         }, 400
     else:
         version = int(version)
+
+    cache_key = (day, version)
+
+    if cache_key in cache:
+        return cache[cache_key]    
 
     api_key = os.getenv("YVP_APP_KEY")
 
@@ -116,4 +123,5 @@ def get_votd():
             }
         }, 502
 
+    cache[cache_key] = response
     return response
