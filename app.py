@@ -42,9 +42,6 @@ def get_votd():
 
     cache_key = (day, version)
 
-    if cache_key in cache:
-        return cache[cache_key]    
-
     api_key = os.getenv("YVP_APP_KEY")
 
     #check for missing API key
@@ -55,6 +52,9 @@ def get_votd():
                 "message": "API key is not configured"
             }
         }, 500
+
+    if cache_key in cache:
+            return cache[cache_key]
 
     headers = {
         "X-YVP-App-Key": api_key
