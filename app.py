@@ -40,6 +40,15 @@ def get_votd():
 
     api_key = os.getenv("YVP_APP_KEY")
 
+    #check for missing API key
+    if not api_key:
+        return {
+            "error": {
+                "code": "CONFIG_ERROR",
+                "message": "API key is not configured"
+            }
+        }, 500
+
     headers = {
         "X-YVP-App-Key": api_key
     }
@@ -56,6 +65,9 @@ def get_votd():
         votd_response.raise_for_status()
         votd_data = votd_response.json()
         passage_id = votd_data["passage_id"]
+        # Validate passage_id (ensure it's a non-empty string)
+        if not isinstance(passage_id, str) or not passage_id.strip():
+            raise ValueError("Invalid passage ID")
 
         #second YouVersion API call to get the passage text
         passage_response = requests.get(
@@ -68,10 +80,23 @@ def get_votd():
         passage_response.raise_for_status()
         passage_data = passage_response.json()
 
+       # Extract passage reference and text
+        reference = passage_data["reference"]
+        content = passage_data["content"]
+
+        # Validate passage reference
+        if not isinstance(reference, str) or not reference.strip():
+            raise ValueError("Invalid passage reference")
+
+        # Validate passage content
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("Invalid passage content")
+
+        # Construct the final response
         response = {
             "day": day,
-            "reference": passage_data["reference"],
-            "text": passage_data["content"],
+            "reference": reference,
+            "text": content,
             "version_id": version
         }
 
@@ -83,7 +108,7 @@ def get_votd():
             }
         }, 502
 
-    except (KeyError, TypeError):
+    except (KeyError, TypeError, ValueError):
         return {
             "error": {
                 "code": "UPSTREAM_ERROR",
